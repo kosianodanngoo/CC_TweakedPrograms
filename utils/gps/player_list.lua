@@ -6,6 +6,11 @@ local selected = 1
 local isList = true
 local targetInfo = {}
 
+local monitor = peripheral.find("monitor")
+if monitor then
+    term.redirect(monitor)
+end
+
 local function clamp(num, min, max)
     return math.max(min, math.min(num, max))
 end
