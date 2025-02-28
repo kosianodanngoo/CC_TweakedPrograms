@@ -19,7 +19,7 @@ map.fixed = false
 map.x = x
 map.z = y
 map.dimension = "minecraft:overworld"
-map.pixelPerBlock = 200
+map.blockPerPixel = 200
 map.stopRender = false
 map.tracePlayer = ""
 map.players = {}
@@ -29,16 +29,20 @@ map.updatePlayerInfo = function()
         if traceInfo.x ~= nil then
             map.x = traceInfo.x
             map.z = traceInfo.z
+            map.dimension = traceInfo.dimension
         end
     end
     local players = playerDetector.getPlayersInCoords(
-        {x = map.x - map.pixelPerBlock * map.width / 2, y = -math.huge, z = map.z - map.pixelPerBlock * map.height / 2},
-        {x = map.x + map.pixelPerBlock * map.width / 2, y = math.huge, z = map.z + map.pixelPerBlock * map.height / 2}
+        {x = map.x - map.blockPerPixel * map.width / 2, y = -math.huge, z = map.z - map.blockPerPixel * map.height / 2},
+        {x = map.x + map.blockPerPixel * map.width / 2, y = math.huge, z = map.z + map.blockPerPixel * map.height / 2}
     )
     local players_info = {}
     for i, player in ipairs(players) do
-        players_info[i] = playerDetector.getPlayer(player)
-        players_info[i].name = player
+        local player_info = playerDetector.getPlayer(player)
+        if player_info.dimension == map.dimension then
+            players_info[#players_info + 1] = player_info
+            players_info[#players_info].name = player
+        end
     end
     map.players = players_info
 end
@@ -47,11 +51,11 @@ map.renderMap = function()
         if not map.stopRender then
             term.clear()
             for i, info in ipairs(map.players) do
-                term.setCursorPos((info.x - map.x) / map.pixelPerBlock + map.width / 2, (info.z - map.z) / map.pixelPerBlock + map.height / 2)
+                term.setCursorPos((info.x - map.x) / map.blockPerPixel + map.width / 2, (info.z - map.z) / map.blockPerPixel + map.height / 2)
                 term.write(string.sub(info.name, 1, 1))
             end
             term.setCursorPos(1, map.height - 1)
-            print("PPB:"..math.floor(map.pixelPerBlock))
+            print("BPP:"..math.floor(map.blockPerPixel))
             term.write("x:"..math.floor(map.x).." z:"..math.floor(map.z))
         end
         sleep(0.05)
@@ -108,6 +112,15 @@ local function inputHandler()
                     end
                 end)
                 map.stopRender = false
+            elseif key == keys.d then
+                map.stopRender = true
+                map.fixed = false
+                term.setCursorPos(1,1)
+                print("Dimension:")
+                sleep(0.05)
+                local dimension = read()
+                map.dimension = dimension
+                map.stopRender = false
             elseif key == keys.backspace then
                 map.stopRender = true
                 term.clear()
@@ -127,8 +140,8 @@ local function inputHandler()
         repeat
             local event, button, x, y = os.pullEvent("mouse_drag")
             if not map.fixed then
-                map.x = map.x - (x - prevX) * map.pixelPerBlock
-                map.z = map.z - (y - prevY) * map.pixelPerBlock
+                map.x = map.x - (x - prevX) * map.blockPerPixel
+                map.z = map.z - (y - prevY) * map.blockPerPixel
             end
             prevX = x
             prevY = y
@@ -137,7 +150,7 @@ local function inputHandler()
     local function scrollHandler()
         repeat
             local event, dir, x, y = os.pullEvent("mouse_scroll")
-            map.pixelPerBlock = map.pixelPerBlock + map.pixelPerBlock * 0.1 * dir
+            map.blockPerPixel = map.blockPerPixel + map.blockPerPixel * 0.1 * dir
         until false
     end
     parallel.waitForAny(keyHandler, clickHandler, dragHandler, scrollHandler)
