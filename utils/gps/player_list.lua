@@ -6,6 +6,11 @@ local selected = 1
 local isList = true
 local targetInfo = {}
 
+
+if not playerDetector then
+    error("Player detector was not found!")
+end
+
 local monitor = peripheral.find("monitor")
 if monitor then
     term.redirect(monitor)
@@ -60,12 +65,14 @@ local function displayInfo()
     print("Y:"..targetInfo.y)
     print("Z:"..targetInfo.z)
     print("Dimension:"..targetInfo.dimension)
-    print("Health:"..math.floor(targetInfo.health).."/"..targetInfo.maxHealth)
-    print("air:"..targetInfo.airSupply)
-    print("RespawnDim:"..targetInfo.respawnDimension)
-    print("respawnX:"..respawnPos.x)
-    print("respawnY:"..respawnPos.y)
-    print("respawnZ:"..respawnPos.z)
+    if targetInfo.health ~= nil then
+        print("Health:"..math.floor(targetInfo.health).."/"..targetInfo.maxHealth)
+        print("air:"..targetInfo.airSupply)
+        print("RespawnDim:"..targetInfo.respawnDimension)
+        print("respawnX:"..respawnPos.x)
+        print("respawnY:"..respawnPos.y)
+        print("respawnZ:"..respawnPos.z)
+    end
     if selected ~= #players then
         term.setCursorPos(size[1]/2, size[2])
         term.write(string.char(25))
@@ -96,7 +103,7 @@ local function infoGetter()
             counter = 0
             refresh()
         end
-        targetInfo = playerDetector.getPlayer(players[selected] or "")
+        targetInfo = playerDetector.getPlayerPos(players[selected] or "")
         sleep(0.05)
         counter = counter + 1
     until false

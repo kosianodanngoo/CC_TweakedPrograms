@@ -3,6 +3,7 @@ local ownerName = "" -- input your name if use on pocket computer
 local x = 0 -- input coumuter pos
 local y = 0
 
+local completion = require("cc.completion")
 local playerDetector = peripheral.find("playerDetector")
 
 local monitor = peripheral.find("monitor")
@@ -25,7 +26,7 @@ map.tracePlayer = ""
 map.players = {}
 map.updatePlayerInfo = function()
     if map.fixed then
-        pcall(function() traceInfo = playerDetector.getPlayer(map.tracePlayer) end)
+        pcall(function() traceInfo = playerDetector.getPlayerPos(map.tracePlayer) end)
         if traceInfo.x ~= nil then
             map.x = traceInfo.x
             map.z = traceInfo.z
@@ -33,12 +34,12 @@ map.updatePlayerInfo = function()
         end
     end
     local players = playerDetector.getPlayersInCoords(
-        {x = map.x - map.blockPerPixel * map.width / 2, y = -math.huge, z = map.z - map.blockPerPixel * map.height / 2},
-        {x = map.x + map.blockPerPixel * map.width / 2, y = math.huge, z = map.z + map.blockPerPixel * map.height / 2}
+        {x = map.x - map.blockPerPixel * map.width, y = -math.huge, z = map.z - map.blockPerPixel * map.height},
+        {x = map.x + map.blockPerPixel * map.width, y = math.huge, z = map.z + map.blockPerPixel * map.height}
     )
     local players_info = {}
     for i, player in ipairs(players) do
-        local player_info = playerDetector.getPlayer(player)
+        local player_info = playerDetector.getPlayerPos(player)
         if player_info.dimension == map.dimension then
             players_info[#players_info + 1] = player_info
             players_info[#players_info].name = player
@@ -49,14 +50,22 @@ end
 map.renderMap = function()
     repeat
         if not map.stopRender then
+            local termSize = {term.getSize()}
+            map.width = termSize[1]
+            map.height = termSize[2]
             term.clear()
+            local prevTermTextColor = term.getTextColor()
+            term.setTextColor(colors.lightGray)
+            term.setCursorPos(1, map.height - 2)
+            print("BPP:"..math.floor(map.blockPerPixel))
+            print("x:"..math.floor(map.x).." z:"..math.floor(map.z))
+            term.write("Dimension:"..map.dimension)
+            term.setTextColor(colors.white)
             for i, info in ipairs(map.players) do
                 term.setCursorPos((info.x - map.x) / map.blockPerPixel + map.width / 2, (info.z - map.z) / map.blockPerPixel + map.height / 2)
                 term.write(string.sub(info.name, 1, 1))
             end
-            term.setCursorPos(1, map.height - 1)
-            print("BPP:"..math.floor(map.blockPerPixel))
-            term.write("x:"..math.floor(map.x).." z:"..math.floor(map.z))
+            term.setTextColor(prevTermTextColor)
         end
         sleep(0.05)
     until false
@@ -64,7 +73,7 @@ end
 
 if pocket then
     map.tracePlayer = ownerName
-    local ownerInfo = playerDetector.getPlayer(ownerName)
+    local ownerInfo = playerDetector.getPlayerPos(ownerName)
     map.x = ownerInfo.x or map.x
     map.z = ownerInfo.z or map.z
     map.dimension = ownerInfo.dimension or map.dimension
@@ -75,7 +84,7 @@ local function main()
     parallel.waitForAll(map.renderMap, function()
         repeat
             pcall(map.updatePlayerInfo)
-            sleep(0.5)
+            sleep(0.05)
         until false
     end)
 end
@@ -90,19 +99,22 @@ local function inputHandler()
             elseif key == keys.f and not is_held then
                 map.stopRender = true
                 map.fixed = false
+                local playerList = playerDetector.getOnlinePlayers()
                 term.setCursorPos(1,1)
                 print("Player Name:")
                 sleep(0.05)
-                local playerName = read()
+                local playerName = read(nil, nil, function(text)
+                    choices = {}
+                    for i, player in ipairs(playerList) do
+                        choices[i] = player
+                    end
+                    return completion.choice(text, choices)
+                end)
                 pcall(function()
-                    local playerInfo = playerDetector.getPlayer(playerName)
+                    local playerInfo = playerDetector.getPlayerPos(playerName)
                     if playerInfo.dimension == nil then
                         term.setCursorPos(1, 3)
                         print("Player not found")
-                        sleep(2)
-                    elseif playerInfo.dimension ~= map.dimension then
-                        term.setCursorPos(1, 3)
-                        print("Player is in a different dimension")
                         sleep(2)
                     else
                         map.x = playerInfo.x
