@@ -61,7 +61,7 @@ local function displayInfo()
     term.setCursorPos(3,2)
     print(players[selected])
     local respawnPos = targetInfo.respawnPosition or {x = 0/0, y = 0/0, z = 0/0}
-    if targetInfo.x ~= nil then
+    if targetInfo.x == nil then
         refresh()
         return
     end
