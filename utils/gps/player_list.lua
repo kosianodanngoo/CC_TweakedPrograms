@@ -54,9 +54,17 @@ local function displayInfo()
         term.setCursorPos(size[1]/2,1)
         term.write(string.char(24))
     end
+    if selected ~= #players then
+        term.setCursorPos(size[1]/2, size[2])
+        term.write(string.char(25))
+    end
     term.setCursorPos(3,2)
     print(players[selected])
     local respawnPos = targetInfo.respawnPosition or {x = 0/0, y = 0/0, z = 0/0}
+    if targetInfo.x ~= nil then
+        refresh()
+        return
+    end
     print("X:"..targetInfo.x)
     print("Y:"..targetInfo.y)
     print("Z:"..targetInfo.z)
@@ -68,10 +76,6 @@ local function displayInfo()
         print("respawnX:"..respawnPos.x)
         print("respawnY:"..respawnPos.y)
         print("respawnZ:"..respawnPos.z)
-    end
-    if selected ~= #players then
-        term.setCursorPos(size[1]/2, size[2])
-        term.write(string.char(25))
     end
 end
 
