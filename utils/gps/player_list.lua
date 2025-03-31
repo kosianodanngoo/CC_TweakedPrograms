@@ -22,15 +22,11 @@ end
 
 local function refresh()
     local nowPlayers = playerDetector.getOnlinePlayers()
-    nowY = 1
-    selected = 1
-    if selected < nowY then
-        nowY = selected
+    if selected > #nowPlayers then
+        nowY = nowY - (#nowPlayers - selected)
+        seleced = #nowPlayers
     end
     local size = {term.getSize()}
-    if selected > nowY + size[2] then
-        nowY = selected - size[2]
-    end
     players = nowPlayers
 end
 
