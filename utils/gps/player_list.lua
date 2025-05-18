@@ -23,8 +23,8 @@ end
 local function refresh()
     local nowPlayers = playerDetector.getOnlinePlayers()
     if selected > #nowPlayers then
-        nowY = nowY - (#nowPlayers - selected)
-        seleced = #nowPlayers
+        nowY = math.min(1, nowY - (#nowPlayers - selected))
+        selected = #nowPlayers
     end
     local size = {term.getSize()}
     players = nowPlayers
