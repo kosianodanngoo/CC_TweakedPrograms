@@ -1,5 +1,5 @@
 local speaker = peripheral.find("speaker")
-local midi = require("midi")
+local midi = require("/modules.midi")
 local file = fs.open("./example_source/example.mid", "rb")
 local midiData = midi.parseMidi(file, speaker)
 file.close()
