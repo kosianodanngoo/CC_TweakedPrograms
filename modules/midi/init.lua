@@ -134,11 +134,18 @@ midi.play = function(midiData, speaker)
     end
     table.sort(events, function(a, b) return a.time < b.time end)
 
+    -- init speaker
+    local initBuf = {}
+    for i = 1, 128 * 16 do
+        initBuf[i] = 0
+    end
+    speaker.playAudio(initBuf)
+
     -- 再生処理
     local currentTime = 0
     local tempo = 500000 -- デフォルトテンポ（マイクロ秒/四分音符）
     local Frequency = 48000
-    local startClock = os.clock()
+    local instruments = {}
     local playingNotes = {}
     for i = 1,16 do
         playingNotes[i] = {}
@@ -146,11 +153,10 @@ midi.play = function(midiData, speaker)
     local c = 0
     local playedTime = 0
     for _, e in ipairs(events) do
+        local secPerTick = tempo / 1000000 / midiData.header.trackDivision
         local deltaTicks = e.time - currentTime
-        currentTime = e.time
-        local realDeltaTime = (deltaTicks / midiData.header.trackDivision) * (tempo / 1000000)
-        local targetClock = startClock + realDeltaTime
-        while os.clock() < targetClock do
+        local nowPlayedTime = playedTime
+        while playedTime + 0.05 / secPerTick < nowPlayedTime + deltaTicks do
             local buffer = {}
             for i = 1,Frequency / 20 do
                 buffer[i] = 0
@@ -158,11 +164,13 @@ midi.play = function(midiData, speaker)
                 local toRemove = {}
                 for ch, track in ipairs(playingNotes) do
                     for n, note in ipairs(track) do
-                        local noteEndTime = playedTime + i * 0.05 * 1000000 * midiData.header.trackDivision / tempo / Frequency
+                        local noteEndTime = playedTime + i * 0.05 / secPerTick / Frequency
                         if note.to < noteEndTime then
                             table.insert(toRemove, {channel = ch, index = n})
                         else
-                            buffer[i] = buffer[i] + (note.frequency * (c*Frequency / 20 + i) / Frequency) % 1 * note.velocity / 16
+                            if note.from <= noteEndTime then
+                                buffer[i] = buffer[i] + ((note.frequency * (c*Frequency / 20 + i) / Frequency) % 1 - 1) * note.velocity / 16
+                            end
                         end
                     end
                 end
@@ -173,22 +181,28 @@ midi.play = function(midiData, speaker)
                     table.remove(playingNotes[item.channel], item.index)
                 end
             end
-            if #buffer ~= 0 then
-                speaker.playAudio(buffer)
-                c= c+1
+            while not speaker.playAudio(buffer) do
+                os.pullEvent("speaker_audio_empty")
             end
-            playedTime = playedTime + 0.05 * 1000000 * midiData.header.trackDivision / tempo
-            sleep(0.05) -- 短時間待機
+            c= c+1
+            currentTime = playedTime
+            playedTime = playedTime + 0.05 / secPerTick
         end
-        startClock = os.clock() -- 次のイベントのために基準時間を更新
+
         if e.event.type == "midi" and e.event.status >= 0x90 and e.event.status < 0xA0 and e.event.data[2] > 0 then
             -- ノートオンイベント（ベロシティ > 0）
             local note = e.event.data[1]
             local velocity = e.event.data[2]
             local frequency = 440 * 2 ^ ((note - 69) / 12)
             local volume = velocity / 127
+            local channel = e.event.status % 16 + 1
+            local to = math.huge
+            local instrument = instruments[channel]
+            if channel == 10 then
+                to = e.time + 0.05 / secPerTick
+            end
             if volume > 0 then
-                table.insert(playingNotes[e.event.status % 0x80 - 0x10 + 1], {note = note, frequency = frequency, velocity = velocity, volume = volume, from = targetClock, to = math.huge})
+                table.insert(playingNotes[channel], {note = note, frequency = frequency, velocity = velocity, volume = volume, from = e.time, to = math.huge, instrument = instrument})
             end
         elseif e.event.type == "midi" and e.event.status >= 0x80 and e.event.status < 0x90 then
             -- ノートオフイベント
@@ -201,6 +215,11 @@ midi.play = function(midiData, speaker)
                     note.to = e.time  -- 終了時間を設定
                 end
             end
+        elseif e.event.type == "midi" and e.event.status >= 0xC0 and e.event.status < 0xD0 then
+            local channel = e.event.status % 16 + 1
+            local programChange = e.event.data[1]
+
+            instruments[channel] = programChange
         elseif e.event.type == "meta" and e.event.metaType == 0x51 then
             -- テンポ設定イベント
             local tempoBytes = {string.byte(e.event.data, 1, 3)}
