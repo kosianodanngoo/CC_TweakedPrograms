@@ -211,7 +211,7 @@ midi.play = function(midiData, speaker)
             
             -- 特定のノートのみを停止する
             for i, note in ipairs(playingNotes[channel]) do
-                if note.note == noteNumber then
+                if note.note == noteNumber and note.to == math.huge then
                     note.to = e.time  -- 終了時間を設定
                 end
             end
