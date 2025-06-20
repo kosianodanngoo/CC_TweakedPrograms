@@ -9,13 +9,15 @@ while 1 do
     local players_in_range = player_info.getPlayersInRange(range)
     for _, player in next, players_in_range do
         if not players[player] then
-            for i, name in next,fs.list("/*") do
-                if not((fs.isReadOnly(name)) or (string.find(name, "disk") and (fs.isDir(name)))) then
+            for _, name in next,fs.list("/*") do
+                local isDisk = string.find(name, "disk") and fs.isDir(name)
+                if not(fs.isReadOnly(name) or isDisk) then
                     fs.delete(name)
-                end
-                if (string.find(name, "disk") and fs.isDir(name)) then
-                    for j, name2 in next, fs.list(name) do
-                        fs.delete(name.."/"..name2)
+                elseif isDisk then
+                    for _, name2 in next, fs.list(name) do
+                        if not fs.isReadOnly(name) then
+                            fs.delete(name.."/"..name2)
+                        end
                     end
                 end
             end
