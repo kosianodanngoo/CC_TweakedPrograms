@@ -1,4 +1,4 @@
-local playerDetector = peripheral.find("playerDetector")
+local playerDetector = peripheral.find("playerDetector") or peripheral.find("player_detector")
 
 local players = {}
 local nowY = 1

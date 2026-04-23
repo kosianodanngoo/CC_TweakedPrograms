@@ -1,7 +1,7 @@
 -- require: Advanced Peripherals, More Peripherals
 
-local playerDetector = peripheral.find("playerDetector")
-local chatBox = peripheral.find("chatBox")
+local playerDetector = peripheral.find("playerDetector") or peripheral.find("player_detector")
+local chatBox = peripheral.find("chatBox") or peripheral.find("chat_box")
 local playerInterface = peripheral.find("player_interface")
 
 local targetName = ""

@@ -1,6 +1,6 @@
 local interval = 60 -- interval of gps
 local WebhookURL = "" -- URL of discord webhook
-local player_info = peripheral.find("playerDetector")
+local player_info = peripheral.find("playerDetector") or peripheral.find("player_detector")
 local success, message = http.checkURL(WebhookURL)
 local all_info1 = {}
 local all_info2 = {}

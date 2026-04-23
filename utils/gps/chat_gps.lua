@@ -1,5 +1,5 @@
-local chat = peripheral.find("chatBox")
-local playerInfo = peripheral.find("playerDetector")
+local chat = peripheral.find("chatBox") or peripheral.find("chat_box")
+local playerInfo = peripheral.find("playerDetector") or peripheral.find("player_detector")
 while 1 do
     local event, username, message, uuid, isHidden = os.pullEvent("chat")
     if string.sub(message, 0, 3) == "gps" then

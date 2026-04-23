@@ -4,7 +4,7 @@ local x = 0 -- input coumuter pos
 local y = 0
 
 local completion = require("cc.completion")
-local playerDetector = peripheral.find("playerDetector")
+local playerDetector = peripheral.find("playerDetector") or peripheral.find("player_detector")
 
 local monitor = peripheral.find("monitor")
 if monitor then
